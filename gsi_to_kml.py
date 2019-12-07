@@ -2,7 +2,6 @@
 
 import sys
 from typing import List
-
 import fastkml
 
 
@@ -26,12 +25,14 @@ class GSIEntry:
 		
 		if data[0] != "$GPRMC":
 			raise Exception("GSIEntry can only parse GPRMC lines.")
-		
-		self.latitude = float(data[3]) / 100
+
+		self.latitude = float(data[3]) // 100
+		self.latitude += (float(data[3]) % 100) / 60
 		if data[4] == "S":
 			self.latitude *= -1
 		
-		self.longitude = float(data[5]) / 100
+		self.longitude = float(data[5]) // 100
+		self.longitude += (float(data[5]) % 100) / 60
 		if data[6] == "W":
 			self.longitude *= -1
 		
@@ -107,5 +108,5 @@ if __name__ == "__main__" and len(sys.argv) > 1:
 		convert_gsi_lines_to_entries(gsi_lines)
 	)
 	
-	with open("/home/amy/Downloads/foo.kml", "w+") as file:
+	with open("foo.kml", "w+") as file:
 		file.write(kml.to_string(prettyprint=True))
