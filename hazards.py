@@ -1,26 +1,14 @@
+import collections
+import itertools
 import math
 import sys
-from typing import List, Sequence, NamedTuple, Tuple, TypeVar
+from typing import Deque, Iterable, List, Sequence, NamedTuple, Tuple, TypeVar
 
 import fastkml
 from fastkml import kml
 
-class Coordinates(NamedTuple):
-	lon: float
-	lat: float
-	speed: float
+from cost_evaluator import *
 
-# Type aliases
-Path = List[Coordinates]
-
-
-def get_kml_file(filename: str) -> kml.KML:
-	kml_obj = kml.KML()
-	
-	with open(filename) as file:
-		kml_obj.from_string(file.read().encode("utf-8"))
-	
-	return kml_obj
 
 T = TypeVar("T")
 def iter_n(sequence: Sequence[T], n: int) -> List[T]:
@@ -74,7 +62,10 @@ def get_stops(path: Path) -> List[Coordinates]:
 	return stops
 
 def calc_dist(c1: Coordinates, c2: Coordinates) -> float:
-	return math.sqrt((c1.lon-c2.lon)**2 + (c1.lat-c2.lat)**2)
+	# Get distances for each dimension in a common unit, meters.
+	lat_dist = (c1.lat - c2.lat) * LAT_RATIO
+	long_dist = (c1.lon - c2.lon) * LONG_RATIO
+	return math.sqrt(lat_dist**2 + long_dist**2)
 
 def calc_angle(c1: Coordinates, c2: Coordinates, c3: Coordinates) -> float:
 	"""
@@ -87,13 +78,13 @@ def calc_angle(c1: Coordinates, c2: Coordinates, c3: Coordinates) -> float:
 	)
 
 def get_left_turns(path: Path) -> List[Coordinates]:
-	turn_segment_length = 10**-4 # Approximation.
-	min_left_turn_angle = (2*math.pi) - (3/4)*math.pi
-	max_left_turn_angle = (2*math.pi) - (1/4)*math.pi
+	turn_segment_length = 35 # Meters
+	min_left_turn_angle = 1.25*math.pi
+	max_left_turn_angle = 1.75*math.pi
 	
 	left_turns = []
 	
-	# The indexes of the three endpoints of the segments.
+	# The indices of the three endpoints of the segments.
 	p1 = 0
 	p2 = 1
 	p3 = 2
@@ -116,7 +107,7 @@ def get_left_turns(path: Path) -> List[Coordinates]:
 			angle = calc_angle(path[p1], path[p2], path[p3])
 			
 			if min_left_turn_angle <= angle <= max_left_turn_angle:
-				left_turns.append(path[p2])
+				left_turns.append(path[p1])
 			
 			
 	except IndexError:
@@ -124,55 +115,82 @@ def get_left_turns(path: Path) -> List[Coordinates]:
 		
 	return left_turns
 
-stop_style_id = "stopMarker"
-lturn_style_id = "lturnMarker"
+hazard_style_id = "redMarker"
 def add_hazard_style(kml_obj: kml.KML) -> None:
-	stop_style = fastkml.Style(id=stop_style_id)
-	lturn_style = fastkml.Style(id=lturn_style_id)
+	stop_style = fastkml.Style(id=hazard_style_id)
 	
 	stop_icon_href = "https://cdn0.iconfinder.com/data/icons/small-n-flat/24/678111-map-marker-512.png"
-	lturn_icon_href = "http://www.myiconfinder.com/uploads/iconsets/256-256-6096188ce806c80cf30dca727fe7c237.png"
 	
 	stop_style.append_style(fastkml.IconStyle(
 		color="ff0000ff",
 		icon_href=stop_icon_href,
 	))
-	lturn_style.append_style(fastkml.IconStyle(
-		color="00ff00ff",
-		icon_href=lturn_icon_href,
-	))
 	
 	kml_doc = next(kml_obj.features())
 	
 	kml_doc.append_style(stop_style)
-	kml_doc.append_style(lturn_style)
 
-def build_hazard_placemark(
-		coords: Coordinates,
-		style_id: str,
-		) -> fastkml.Placemark:
+def build_hazard_placemark(coords: Coordinates) -> fastkml.Placemark:
 	placemark = fastkml.Placemark()
-	placemark.styleUrl = f"#{style_id}"
+	placemark.styleUrl = f"#{hazard_style_id}"
 	
 	g = fastkml.geometry.Geometry(
 		altitude_mode="relativeToGround",
 	)
 	
-	g.geometry = fastkml.geometry.Point(
-		coords
-	)
+	g.geometry = fastkml.geometry.Point(coords)
 	
 	placemark.geometry = g
 	
 	return placemark
+
+def remove_similar_coords(points: Iterable[Coordinates]) -> List[Coordinates]:
+	# Minimum distance between hazards before we call them different. In meters.
+	min_allowed_distance = 30
 	
+	points_q: Deque[Coordinates] = collections.deque(points)
+	kept = []
+	
+	while len(points_q) > 0:
+		 # Don't pop yet; we want to know when we've come back from the start.
+		current_group = [points_q[0]]
+		
+		points_q.rotate()
+		while points_q[0] is not current_group[0]:
+			
+			if any(
+				calc_dist(group_point, points_q[0]) < min_allowed_distance
+				for group_point in current_group
+				):
+				
+				# This point is very close to the current group; include it.
+				current_group.append(points_q.popleft())
+			
+			points_q.rotate()
+		
+		# Remove the original reference point from the queue, and add it as the
+		# 	representative point to keep of the group.
+		kept.append(points_q.popleft())
+	
+	return kept
+
+
+def get_hazards(coords_path: Path) -> List[Coordinates]:
+	stops = get_stops(coords_path)
+	left_turns = get_left_turns(coords_path)
+	
+	# There's a *lot* of duplication of points both within and between the
+	# 	hazard lists.
+	# Let's join the lists together and cut down on that as much as we can.
+	hazards = remove_similar_coords(itertools.chain(stops, left_turns))
+	
+	return hazards
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
 		raise Exception("No KML filename provided.")
 	
 	kml_object = get_kml_file(sys.argv[1])
-	#kml_object = get_kml_file("proj/ZJ42_L2C_trip_home.kml")
 	kml_document = next(kml_object.features())
 	
 	geometry_obj = next(kml_document.features()).geometry
@@ -183,18 +201,10 @@ if __name__ == "__main__":
 	
 	add_hazard_style(kml_object)
 	
-	stops = get_stops(coords_path)
-	left_turns = get_left_turns(coords_path)
+	hazards = get_hazards(coords_path)
 	
-	print(f"Stops: {len(stops)}, L-Turns: {len(left_turns)}")
-	
-	#for stop in stops:
-	#	kml_document.append(build_hazard_placemark(stop, stop_style_id))
-	
-	for lturn in left_turns:
-		kml_document.append(build_hazard_placemark(lturn, stop_style_id))
-		
-	# Add metric line
+	for hazard in hazards:
+		kml_document.append(build_hazard_placemark(hazard))
 	
 	
 	with open("/home/amy/Downloads/foo.kml", "w+") as file:
