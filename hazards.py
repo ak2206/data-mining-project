@@ -8,21 +8,6 @@ import fastkml
 from fastkml import kml
 
 from cost_evaluator import *
-
-
-T = TypeVar("T")
-def iter_n(sequence: Sequence[T], n: int) -> List[T]:
-	"""
-	Iterate through the given sequence n at a time, consuming only one each
-	iteration.
-	
-	Examples:
-	>>> list(iter_n([1,2,3,4,5,6], 2))
-	[[1,2],[2,3],[3,4],[4,5],[5,6]]
-	"""
-	
-	for i in range(len(sequence) + 1):
-		yield sequence[i:i+n]
 	
 
 def get_stops(path: Path) -> List[Coordinates]:
@@ -180,29 +165,4 @@ def get_hazards(coords_path: Path) -> List[Coordinates]:
 	
 	return hazards
 
-if __name__ == "__main__":
-	"""
-	if len(sys.argv) < 2:
-		raise Exception("No KML filename provided.")
-	
-	kml_object = get_kml_file(sys.argv[1])
-	kml_document = next(kml_object.features())
-	
-	geometry_obj = next(kml_document.features()).geometry
-	coords_path = [
-		Coordinates(*co_tuple)
-		for co_tuple in geometry_obj.coords
-	]
-	
-	add_hazard_style(kml_object)
-	
-	hazards = get_hazards(coords_path)
-	
-	for hazard in hazards:
-		kml_document.append(build_hazard_placemark(hazard))
-	
-	
-	with open("/home/amy/Downloads/foo.kml", "w+") as file:
-		file.write(kml_object.to_string(prettyprint=True))
-	"""
-	pass
+pass
