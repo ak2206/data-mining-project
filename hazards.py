@@ -61,12 +61,6 @@ def get_stops(path: Path) -> List[Coordinates]:
 		
 	return stops
 
-def calc_dist(c1: Coordinates, c2: Coordinates) -> float:
-	# Get distances for each dimension in a common unit, meters.
-	lat_dist = (c1.lat - c2.lat) * LAT_RATIO
-	long_dist = (c1.lon - c2.lon) * LONG_RATIO
-	return math.sqrt(lat_dist**2 + long_dist**2)
-
 def calc_angle(c1: Coordinates, c2: Coordinates, c3: Coordinates) -> float:
 	"""
 	Find the angle between c1-c2 and c2-c3.
@@ -187,6 +181,7 @@ def get_hazards(coords_path: Path) -> List[Coordinates]:
 	return hazards
 
 if __name__ == "__main__":
+	"""
 	if len(sys.argv) < 2:
 		raise Exception("No KML filename provided.")
 	
@@ -209,5 +204,5 @@ if __name__ == "__main__":
 	
 	with open("/home/amy/Downloads/foo.kml", "w+") as file:
 		file.write(kml_object.to_string(prettyprint=True))
-	
+	"""
 	pass
