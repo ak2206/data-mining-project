@@ -1,4 +1,7 @@
+#!/usr/bin/python3
+
 import math
+import os
 import sys
 from typing import Iterable, List, NamedTuple, Sequence, TypeVar, Union
 
@@ -105,11 +108,18 @@ def total_cost(path: Path) -> float:
 	# Roughly, total distance is twice as important as speed.
 	return (
 		(distance * 1) +
-		(avg_speed * SPEED_DISTANCE_COST_RATIO)
+		(-avg_speed * SPEED_DISTANCE_COST_RATIO)
+	)
+
+def get_best_kml_file(directory_name: str) -> fastkml.kml.KML:
+	return min(
+		os.listdir(directory_name),
+		key=lambda filename: total_cost(get_kml_coordinates(get_kml_object(os.path.join(directory_name, filename)))),
 	)
 
 
 if __name__ == "__main__":
+	"""
 	if len(sys.argv) < 2:
 		raise Exception("No KML file name provided.")
 	
@@ -122,7 +132,11 @@ if __name__ == "__main__":
 		for co_tuple in geometry_obj.coords
 	]
 	
+	
+	
 	print(f"Total distance: {calc_total_dist(coords_path)}")
 	print(f"Average speed: {calc_average_speed(coords_path)}")
 	
 	pass
+	"""
+	print(get_best_kml_file("GOOD_KML_FILES_TO_WORK"))

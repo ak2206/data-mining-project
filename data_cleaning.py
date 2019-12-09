@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import pandas as pd
 import numpy as np
 from fastkml import kml
@@ -7,6 +9,10 @@ import os
 import re
 from shutil import copyfile
 
+from cost_evaluator import calc_dist, Coordinates, get_kml_coordinates
+
+RIT_COORDS = Coordinates(-77.675, 43.085, 0)
+KINSMAN_HOME_COORDS = Coordinates(-77.438, 43.138, 0)
 
 def main():
     directory = "KML_FILES_TO_WORK"
@@ -27,42 +33,43 @@ def main():
 
 # Checks that the file has endpoints at each of the target locations
 def check(file_name):
-    rit_coords = [-1*(77+(40/60)+(30/360)), 43 + 5/60 + 6/360]
-    home_coords = [-1*(77+26/60+17/360), 43+8/60+17/360]
+    
     with open(file_name, 'rt', encoding="utf-8") as myfile:
         doc = myfile.read()
-        k = kml.KML()
-        k.from_string(doc)
-        kml_doc = next(k.features())
-        data = next(kml_doc.features()).geometry.coords
-        df = pd.DataFrame(data)
-        # df is now a Pandas data frame of all the coordinate entries in the kml file
-        reached_rit = False
-        reached_home = False
+    
+    k = kml.KML()
+    k.from_string(doc)
+    coordinates = get_kml_coordinates(k)
+    
+    first_point = Coordinates(*coordinates[0])
+    last_point = Coordinates(*coordinates[-1])
+    
+    reached_rit = False
+    reached_home = False
 
-        first_point = df.iloc[0]  # the first row
-        last_point = df.iloc[-1]  # the last row
-        points = [first_point, last_point]
+    points = [first_point, last_point]
+    
+    for point in points:
+        if calc_dist(RIT_COORDS, point) <= 1000:
+            reached_rit = True
+            
+        elif calc_dist(KINSMAN_HOME_COORDS, point) < 500:
+                reached_home = True
 
-        for point in points:
-            if distance_between_points(rit_coords, point) < 0.1:
-                reached_rit = True
-            else:
-                if distance_between_points(home_coords, point) < 0.078:
-                    reached_home = True
-
-        if reached_rit and reached_home:
-            print(file_name + " has an endpoint at RIT and Home")
-            return 1
-        else:
-            if reached_rit:
-                print(file_name + " does not have an endpoint at Home")
-            else:
-                if reached_home:
-                    print(file_name + " does not have an endpoint at RIT")
-                else:
-                    print(file_name + " does not have an endpoint at Home nor RIT")
-        return 0
+    if reached_rit and reached_home:
+        print(file_name + " has an endpoint at RIT and Home")
+        return 1
+    
+    elif reached_rit:
+        print(file_name + " does not have an endpoint at Home")
+        
+    elif reached_home:
+        print(file_name + " does not have an endpoint at RIT")
+    
+    else:
+        print(file_name + " does not have an endpoint at Home nor RIT")
+    
+    return 0
 
 
 def distance(a, b):
