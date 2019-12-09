@@ -43,7 +43,7 @@ def check(file_name):
     
     first_point = Coordinates(*coordinates[0])
     last_point = Coordinates(*coordinates[-1])
-    
+
     reached_rit = False
     reached_home = False
 
@@ -58,7 +58,8 @@ def check(file_name):
 
     if reached_rit and reached_home:
         print(file_name + " has an endpoint at RIT and Home")
-        return 1
+        return check_for_jumps(coordinates)
+
     
     elif reached_rit:
         print(file_name + " does not have an endpoint at Home")
@@ -70,6 +71,18 @@ def check(file_name):
         print(file_name + " does not have an endpoint at Home nor RIT")
     
     return 0
+
+
+def check_for_jumps(coordinates) -> int:
+    last_coord = Coordinates(*coordinates[0])
+    current_coord = Coordinates(*coordinates[0])
+    for coordinate in coordinates:
+        current_coord = Coordinates(*coordinate)
+        if calc_dist(last_coord, current_coord) > 100:
+            return 0
+        last_coord = current_coord
+    print("------------------")
+    return 1
 
 
 def distance(a, b):
