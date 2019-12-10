@@ -4,7 +4,6 @@
 mkdir -p KML_FILES_TO_WORK
 for file in FILES_TO_WORK/*.txt; do
     python3 gsi_to_kml.py "$file" > /dev/null 2>&1
-    # This just assumes that KML_FILES_TO_WORK exists
     cp foo.kml "KML_${file/%.txt/.kml}"
 done
 rm foo.kml
