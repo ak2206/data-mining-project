@@ -10,19 +10,25 @@ RIT_COORDS = Coordinates(-77.675, 43.085, 0)
 KINSMAN_HOME_COORDS = Coordinates(-77.438, 43.138, 0)
 
 
-def main():
+def validate_kml_files():
     """"
-    Checks for large jumps and files that don't end and start at the two target locations
-    Copies files that don't have those flaws to a folder called GOOD_KML_FILES_TO_WORK
-    Note: must have a directory of kml files to be checked called KML_FILES_TO_WORK
+    Iterate through all files and check for invalid attributes.
+    
+    Such attributes are large, discontiguous jumps, and endpoints which aren't
+    nearby where they're supposed to be.
+    
+    Files which don't have these attributes are copied over to the
+    GOOD_KML_FILES_TO_WORK directory.
+    
+    Source files come from the KML_FILES_TO_WORK directory.
     """
+    
     directory = "KML_FILES_TO_WORK"
-    try:
+    good_directory = f"GOOD_{directory}"
+    if not os.path.isdir(good_directory):
         os.mkdir("GOOD_"+directory)
-    except OSError:
-        print("Creation of the directory %s failed" % ("Good"+directory))
-    else:
         print("Successfully created the directory %s " % ("Good"+directory))
+        
     for filename in os.listdir(directory):
         if filename.endswith(".kml"):
             file = str(os.path.join(directory, filename))
@@ -37,8 +43,10 @@ def check(file_name):
     Checks that the file has endpoints at each of the target locations
     and calls the method to check for large jumps between points
     :param file_name: the name of the kml file to be checked
-    :return: integer indicating whether the file is good or bad (1 or 0 respectively)
+    :return: integer indicating whether the file is good or bad
+        (1 or 0 respectively)
     """
+    
     with open(file_name, 'rt', encoding="utf-8") as myfile:
         doc = myfile.read()
     
@@ -64,25 +72,19 @@ def check(file_name):
     if reached_rit and reached_home:
         # print(file_name + " has an endpoint at RIT and Home")
         return check_for_jumps(coordinates)
-    """elif reached_rit:
-        print(file_name + " does not have an endpoint at Home")
-        
-    elif reached_home:
-        print(file_name + " does not have an endpoint at RIT")
-    
-    else:
-        print(file_name + " does not have an endpoint at Home nor RIT")
-        """
     
     return 0
 
 
 def check_for_jumps(coordinates) -> int:
     """
-    Checks for jumps of more than 100 meters between any two consecutive coordinates in the kml file
+    Checks for jumps of more than 100 meters between any two consecutive
+    coordinates in the kml file
+    
     :param coordinates: the list of coordinates
     :return: 1 or 0 indicating no jumps and jumps respectively
     """
+    
     last_coord = Coordinates(*coordinates[0])
     current_coord = Coordinates(*coordinates[0])
     for coordinate in coordinates:
@@ -94,4 +96,4 @@ def check_for_jumps(coordinates) -> int:
 
 
 if __name__ == '__main__':
-    main()
+    validate_kml_files()

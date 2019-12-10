@@ -50,7 +50,7 @@ def get_stops(path: Path) -> List[Coordinates]:
 
 def calc_angle(c1: Coordinates, c2: Coordinates, c3: Coordinates) -> float:
 	"""
-	Find the angle between c1-c2 and c2-c3.
+	Find the angle between c1-c2 and c2-c3, in radians.
 	"""
 	
 	return (
@@ -59,6 +59,16 @@ def calc_angle(c1: Coordinates, c2: Coordinates, c3: Coordinates) -> float:
 	)
 
 def get_left_turns(path: Path) -> List[Coordinates]:
+	"""
+	Get a list of detected left turns over the coordinate path.
+	
+	Specifically, get the *first* detected coordinate of those turns.
+	
+	Such turns are detected by walking down the path and maintaining two
+	connected segments along the path. If the angle created by those segments is
+	within a certain range, they likely signify a left turn.
+	"""
+	
 	turn_segment_length = 35 # Meters
 	min_left_turn_angle = 1.25*math.pi
 	max_left_turn_angle = 1.75*math.pi
@@ -92,12 +102,17 @@ def get_left_turns(path: Path) -> List[Coordinates]:
 			
 			
 	except IndexError:
+		# The end of the path was reached.
 		pass
 		
 	return left_turns
 
 hazard_style_id = "redMarker"
 def add_hazard_style(kml_obj: kml.KML) -> None:
+	"""
+	Add a placemark style for hazard icons to the KML object.
+	"""
+	
 	stop_style = fastkml.Style(id=hazard_style_id)
 	
 	stop_icon_href = "https://cdn0.iconfinder.com/data/icons/small-n-flat/24/678111-map-marker-512.png"
@@ -112,6 +127,10 @@ def add_hazard_style(kml_obj: kml.KML) -> None:
 	kml_doc.append_style(stop_style)
 
 def build_hazard_placemark(coords: Coordinates) -> fastkml.Placemark:
+	"""
+	Create a hazard placemark for the given coordinates.
+	"""
+	
 	placemark = fastkml.Placemark()
 	placemark.styleUrl = f"#{hazard_style_id}"
 	
@@ -126,6 +145,17 @@ def build_hazard_placemark(coords: Coordinates) -> fastkml.Placemark:
 	return placemark
 
 def remove_similar_coords(points: Iterable[Coordinates]) -> List[Coordinates]:
+	"""
+	Return a version of the given iterable with clusters of points reduced to
+	single representatives.
+	
+	This is accomplished in a way similar to agglomeration. A group is created
+	with an arbitrary point, then the list of points is walked and any points
+	nearby to any of the points in the group are absorbed into it. Once the walk
+	is finished, the first point is chosen as a representative and added to the
+	list of points to keep, and the rest are discarded.
+	"""
+	
 	# Minimum distance between hazards before we call them different. In meters.
 	min_allowed_distance = 30
 	
@@ -157,6 +187,11 @@ def remove_similar_coords(points: Iterable[Coordinates]) -> List[Coordinates]:
 
 
 def get_hazards(coords_path: Path) -> List[Coordinates]:
+	"""
+	Get a combined list of coordinates for all stops and left turns along the
+	given coordinate path.
+	"""
+	
 	stops = get_stops(coords_path)
 	left_turns = get_left_turns(coords_path)
 	
