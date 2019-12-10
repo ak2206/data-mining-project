@@ -20,9 +20,9 @@ def main():
     try:
         os.mkdir("GOOD_"+directory)
     except OSError:
-        print("Creation of the directory %s failed" % ("Good"+directory))
+        print("Creation of the directory %s failed, perhaps it already exists" % ("GOOD"+directory))
     else:
-        print("Successfully created the directory %s " % ("Good"+directory))
+        print("Successfully created the directory %s " % ("GOOD"+directory))
     for filename in os.listdir(directory):
         if filename.endswith(".kml"):
             file = str(os.path.join(directory, filename))
