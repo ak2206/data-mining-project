@@ -27,7 +27,7 @@ def validate_kml_files():
     good_directory = f"GOOD_{directory}"
     if not os.path.isdir(good_directory):
         os.mkdir("GOOD_"+directory)
-        print("Successfully created the directory %s " % ("Good"+directory))
+        print("Successfully created the directory %s " % ("GOOD"+directory))
         
     for filename in os.listdir(directory):
         if filename.endswith(".kml"):

@@ -52,7 +52,7 @@ def convert_gsi_lines_to_entries(lines: List[str]) -> List[GSIEntry]:
 
 
 style_id = "yellowPoly"
-def convert_gsientries_to_kml(entries: List[GSIEntry]) -> fastkml.KML:
+def convert_gsientries_to_kml(entries: List[GSIEntry]) -> fastkml.KML: #
 	
 	# Boilerplate for creating a new KML doc.
 	kml = fastkml.KML()
