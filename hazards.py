@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import collections
 import itertools
 import math
@@ -165,4 +167,19 @@ def get_hazards(coords_path: Path) -> List[Coordinates]:
 	
 	return hazards
 
-pass
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		raise Exception("No KML file name provided.")
+	
+	filename = sys.argv[1]
+	
+	kml_object = get_kml_object(filename)
+	kml_document = get_kml_document(kml_object)
+	
+	add_hazard_style(kml_object)
+	
+	for hazard in get_hazards(get_kml_coordinates(kml_object)):
+		kml_document.append(build_hazard_placemark(hazard))
+	
+	write_kml_object(kml_object, filename)

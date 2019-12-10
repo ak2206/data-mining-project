@@ -33,6 +33,10 @@ def get_kml_object(filename: str) -> fastkml.kml.KML:
 	
 	return kml_obj
 
+def write_kml_object(kml_object: fastkml.kml.KML, filename: str) -> None:
+	with open(filename, "w+") as file:
+		file.write(kml_object.to_string())
+
 def get_kml_document(kml_obj: fastkml.kml.KML) -> fastkml.Document:
 	return next(kml_obj.features())
 

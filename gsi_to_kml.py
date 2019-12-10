@@ -72,7 +72,7 @@ def convert_gsientries_to_kml(entries: List[GSIEntry]) -> fastkml.KML:
 	g = fastkml.geometry.Geometry(
 		extrude=True,
 		tessellate=True,
-		altitude_mode="absolute",
+		altitude_mode="relativeToGround",
 	)
 	
 	g.geometry = fastkml.geometry.LineString([
